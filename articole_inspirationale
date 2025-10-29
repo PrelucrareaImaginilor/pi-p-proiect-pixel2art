@@ -1,0 +1,408 @@
+Articol 1:
+Autor(i) / An: Lin Zhang , Senior Member, IEEE, Junhao Huang, Xiyuan Li, and Lu Xiong
+Titlul articolului / proiectului: Vision-Based Parking-Slot Detection: A DCNN-Based Approach and a Large-Scale Benchmark Dataset
+Tehnologii utilizate:
+Deep Convolutional Neural Networks (DCNN) IEEE Xplore
+Camere fisheye low-cost (4 camere pentru sinteză imagine surround-view) Cslinzhang
+YOLOv2 framework pentru detectarea marking-points PubMed
+Around View Monitor (AVM) systems
+
+Metodologie / Abordare:
+Numele metodei: DeepPS (Deep Parking Slot detection) PubMedIEEE Xplore
+Pași principali:
+Identificarea tuturor marking-points (punctele de marcare) din imaginea de intrare 
+Clasificarea pattern-urilor locale formate de perechi de marking-points 
+Ambele probleme sunt formulate ca probleme de învățare automată, rezolvate cu modele DCNN moderne 
+Input: Imagine surround-view sintetizată din 4 camere fisheye 
+
+Rezultate:Dataset creat: 12,165 imagini surround-view colectate din locații de parcare tipice indoor și outdoor, 9,827 imagini de antrenament și 2,338 imagini de test 
+Performanță:
+Recall rate: 98.89%, Precision rate: 99.54% pe întregul set de test ps2.0 
+Timp de procesare: 23ms per frame 
+Un alt studiu raportează 99.68% precizie și 99.41% recall pe dataset-ul ps2.0, cu viteză de 13ms per frame pe Titan Xp 
+Aplicații practice: Deja implementat pe mașinile electrice SAIC Roewe E5
+
+Limitări: Factorii nefavorabili menționați în articol includ: diversitatea materialelor de sol, schimbările în condițiile de iluminare, și umbrele imprevizibile cauzate de copaci din apropiere, care fac detectarea locurilor de parcare bazată pe viziune mult mai dificilă decât pare 
+Necesită sistem AVM cu 4 camere fisheye
+Performanța poate varia în condiții extreme de vreme
+Depinde de vizibilitatea marking-urilor
+
+
+Articol 2: Analiză Articol: IoT Based Smart Parking Slot Finder
+Autor(i) / An: tpmabdulkareem, anul 2018 
+Titlul articolului / proiectului: Smart Parko - IoT Based Smart Parking Slot Finder
+Tehnologii utilizate:
+-Raspberry Pi 3 - procesor principal cu quad-core 64-bit ARM Cortex A53 la 1.2 GHz
+-Pi Camera - senzor Sony IMX219 de 8 megapixeli, capabil de imagini 3280 x 2464 pixeli
+-OpenCV - bibliotecă open-source pentru computer vision și procesare de imagini
+-Node.js wrapper for OpenCV - interfață pentru OpenCV în Node.js
+-MQTT (MQ Telemetry Transport) - protocol M2M/IoT pentru comunicare publish-subscribe
+-Digital Ocean Cloud - platformă cloud pentru stocarea și procesarea datelor
+-Android Studio - IDE pentru dezvoltarea aplicației mobile
+-Google Cloud Functions și Firebase - servicii serverless pentru backend
+-GPS - pentru localizarea utilizatorului și navigare
+
+Metodologie / Abordare:
+Numele metodei: Smart Parking System bazat pe IoT și procesare de imagini cu detecție prin background subtraction
+Pași principali:
+Definirea imaginii de fundal - Capturarea parking-ului fără mașini parcate, cu liniile de marcare vizibile
+Inițializarea hărții de parcare - Marcarea manuală a locurilor de parcare ca dreptunghiuri (cameră fixă)
+Verificarea continuă a statusului - Pentru fiecare frame din camera feed, verificarea ocupării locurilor prin metoda background subtraction
+Actualizarea statusului - Update în timp real al disponibilității locurilor de parcare
+Transmiterea datelor - Sincronizare prin MQTT către cloud platform
+Interacțiunea cu utilizatorul - Afișarea locurilor disponibile în aplicația Android cu navigare GPS
+Input:
+Stream video de la Pi Camera montată fix deasupra parking-ului
+Coordonate GPS de la utilizator
+Cereri de rezervare din aplicația mobilă
+Output:
+Hartă cu locuri disponibile/ocupate în timp real
+Navigare GPS către locul de parcare selectat
+Confirmări de rezervare și informații despre plată
+Rezultate
+Dataset/Implementare:
+Sistem functional implementat cu arhitectură IoT completă
+Aplicație Android "SMART-PARKO" cu interfață user-friendly
+Integrare cloud pentru stocarea datelor utilizatorilor și statusul parking-urilor
+Performanță:
+Timp real - procesare continuă a imaginilor pentru detectarea mașinilor
+Eficiență energetică - folosește Raspberry Pi 3 (cost redus, consum mic)
+Scalabilitate - poate fi extins la multiple parking-uri în orașe
+Documentul nu specifică metrici exacte de precizie sau recall rate
+Funcționalități aplicație:
+Găsirea locurilor de parcare aproape de locația utilizatorului (GPS)
+Vizualizarea disponibilității live
+Rezervarea locurilor de parcare
+Calcul și afișare preț pentru perioada selectată
+Sistem de plată integrat
+Timer pentru monitorizarea timpului de parcare
+Aplicații Practice
+Orașe metropolitane - reducerea timpului de căutare a locurilor de parcare
+Parking-uri publice și private - optimizarea utilizării spațiului
+Stații metro - management eficient al parcărilor
+Infrastructură Smart City - parte din ecosistemul orașului inteligent
+Limitări
+Tehnice:
+Cameră fixă - nu suportă rotație sau zoom, limitează flexibilitatea
+Dependență de condiții vizuale - performanța afectată de iluminare, umbre, vreme
+Marcare manuală - necesită inițializare manuală pentru fiecare parking
+Background subtraction simplu - metoda poate avea probleme cu umbrele, schimbări de iluminare
+Lipsa backup storage - CRITIC: sistemul folosește localStorage în artifacts, ceea ce NU este suportat în mediul Claude.ai
+Lipsa redundanței - dependență de conexiunea la cloud (Digital Ocean)
+
+Functionale:
+Nu specifică metrici de performanță - lipsesc date despre acuratețe, recall, precizie
+Lipsa modelului matematic - nu prezintă ecuații pentru operațiunile sistemului
+Evaluare limitată - nu menționează teste la scară largă sau în condiții variate
+Gestionarea cererilor refuzate - nu descrie mecanismul pentru situațiile când cererea este respinsă
+Timp de așteptare - nu calculează timpul mediu de așteptare per vehicul
+Economice/Practice:
+Cost inițial - necesită instalare hardware (Raspberry Pi + cameră) pentru fiecare parking
+Mentenanță - camerele și sistemul trebuie întreținute regulat
+Scalabilitate costisitoare - extinderea la multe parking-uri necesită investiții semnificative
+Dependență de internet - sistem non-functional fără conexiune stabilă
+Comparativ cu alte sisteme:
+Autorii recunosc că sistemul lor nu oferă:
+Mecanism de rezervare a resurselor (toate cererile sunt procesate imediat)
+Evaluarea performanței sistemului de parcare
+Model matematic complex pentru arhitectura sistemului
+Sistem de navigare indoor avansat (ca inertial navigation systems - INS)
+
+
+Articol 3: 
+Autor(i) / An:Pranav Rajesh, Dheeraj Kallakuri, Sudeeksha Chagarlamudi, Sai Manoj Vissavajhula, Jingxiong Meng, Junfeng Zhao
+Instituție: Polytechnic School, Arizona State University, Tempe, AZ, USA . Anul 2025 (publicat: 2 septembrie 2025)
+Titlul articolului / proiectului: Intelligent Parking Guidance System Using Computer Vision, IoT, and Edge Computing
+Tehnologii utilizate:
+Hardware:
+GoPro Hero 10 - cameră monoculară pentru captarea video
+NVIDIA Jetson AGX Orin - procesor edge computing pentru procesare în timp real
+Trepied - montare cameră la 30 feet înălțime
+Setup multi-cameră - 4 camere plasate în colțurile parking-ului (pentru versiunea extinsă)
+Software & Algoritmi:
+YOLOv5x6 - arhitectură de detecție obiecte, antrenată pe dataset COCO + 200 imagini custom
+CUDA - accelerare GPU pentru procesare
+OpenCV - procesare imagini și computer vision
+Bresenham's Algorithm - pentru definirea spațiilor de parcare
+IoU (Intersection over Union) Ray Casting Algorithm - calcularea ocupării prin metoda polygon-point
+Edge Detection + Hough Transform - extragerea coordonatelor spațiilor de parcare
+Cloud & IoT:
+MongoDB (NoSQL) - bază de date centralizată pentru stocarea statusului
+AWS Kinesis Video Streams - streaming video către cloud
+AWS Lambda REST API - middleware pentru comunicare backend-frontend
+GStreamer - pipeline pentru optimizarea video (640×480 la 30 FPS, encoding H.264)
+React - interfață web pentru utilizatori
+Google Maps API - localizare, calcul distanțe, navigare
+Distance Matrix API
+Directions Service
+Geolocation API
+Metodologie / Abordare:
+Numele metodei:Intelligent Parking Guidance System cu Edge Computing și Computer Vision Multi-Modulară
+Arhitectură sistem (4 module principale):
+1. Detection Module (Detecția spațiilor de parcare):
+Definirea spațiilor de parcare:
+Capturarea snapshot-ului parking-ului
+Marcarea manuală a regiunilor de interes (ROI)
+Stocarea coordonatelor în format procesabil (one-time setup)
+Detectarea vehiculelor:
+YOLOv5x6 detectează vehiculele (bounding boxes galbene)
+Calcul centroid pentru fiecare vehicul detectat
+Verificare dacă centroidul se află în poligonul spațiului de parcare
+Calcul IoU: dacă IoU ≥ 50% → spațiu ocupat, altfel → vacant
+2. Localization Module (Localizarea spațiilor vacante):
+Obținerea coordonatelor GPS (Latitudine, Longitudine) pentru fiecare spațiu de parcare din Google Maps
+Maparea coordonatelor la etichete (P1, P2, ..., P20)
+Obținerea locației utilizatorului (GPS)
+Calcularea distanțelor între utilizator și fiecare spațiu vacant folosind Distance Matrix API
+Sortarea distanțelor → identificarea celui mai apropiat spațiu vacant
+3. Navigation Module (Ghidare rutieră):
+Inițializare Google Maps folosind API key
+Definirea containerului HTML (<div>) pentru hartă
+Overlaying al layout-ului parking-ului (poligoane pentru spații, alei, intrări)
+Calcularea rutei optime folosind Google Maps Directions Service
+getCurrentPosition() - locația curentă
+WatchPosition() - monitorizare continuă pentru reruting dinamic
+Generare navigare vizuală + textuală step-by-step
+4. Website Interface Module:
+Frontend: React cu 3 pagini:
+Listing page - listă spații vacante, cel mai apropiat evidențiat
+Navigation page - hartă interactivă cu direcții în timp real
+Live feed page - stream video procesat din parking
+Backend: AWS Lambda + API Gateway
+Streaming video: Kinesis Video Streams (decouplat de detecție)
+Comunicare: REST API (optimizat vs. GraphQL pentru costuri reduse)
+Rezultate:
+Dataset/Implementare:
+Parking-lot test: 20 spații pe 2 alei
+Dataset antrenare: COCO + 200 imagini custom de vehicule
+Platformă: Jetson AGX Orin (edge computing)
+Performanță - Single Camera:
+Acuratețe detecție:
+YOLOv5s (pre-antrenare): 57% mAP50
+YOLOv5s (după fine-tuning cu dataset custom): 93.6% mAP50
+YOLOv5x6 (model final): 94% acuratețe detecție vehicule
+Latență totală sistem: 2-3 secunde
+Procesare frame: 50-70 ms
+Determinare ocupare totală: ~1.5 secunde
+Stocare MongoDB (LAN): 0.2-0.5 secunde
+Fetch AWS Lambda REST API: 0.5-1.0 secunde
+Streaming video (separat): 2-3 secunde (nu intră în latența principală)
+Optimizări:
+Navigare: eliminarea lag-ului de 6 secunde prin mutarea calculelor Google API pe device-ul utilizatorului
+Video streaming: downscale la 640×480, encoding H.264 → reducere latență cu 4 secunde vs. HD
+Database: Pool requests → eliminare lag
+Performanță - Multi-Camera:
+Setup:
+4 camere în colțurile parking-ului
+10 spații monitorizate per cameră
+Overlap în field of view pentru unele spații
+Rezolvarea false positives/negatives:
+Formula calcul distanță cameră-spațiu (Euclidean):
+D = √[(X₂-X₁)² + (Y₂-Y₁)² + (Z₂-Z₁)²]
+Threshold decizie: Weighted Avg IoU ≥ 0.45 → ocupat
+Domenii de utilizare:
+Zone urbane - reducerea congestiei și emisiilor de gaze
+Parcări comerciale - management eficient al spațiului
+Locuri publice - îmbunătățirea experienței utilizatorilor
+Aeroporturi și stații - ghidare rapidă către parcări
+Smart Cities - integrare în ecosistemul urban inteligent
+Beneficii:
+Reducerea timpului de căutare - navigare directă către cel mai apropiat spațiu
+Eficiență combustibil - mai puțin timp circuitul în parking
+Siguranță crescută - reducerea accidentelor cauzate de șoferi distrași
+Impact ecologic pozitiv - reducere emisii CO₂
+Experiență îmbunătățită - interfață user-friendly cu actualizări în timp real
+
+
+
+Limitări:
+Tehnice:
+Single-camera system:
+Ocluzii - vehicule mari pot bloca vizibilitatea altor spații
+False positives/negatives - umbre, variații de iluminare, obiecte temporare
+Field of view limitat - o singură cameră nu acoperă parking-uri mari
+Cameră fixă - poziție și unghi statice, fără ajustare dinamică
+Multi-camera system:
+Complexitate calibrare - necesită coordonate GPS precise pentru fiecare spațiu
+Sincronizare - procesarea simultană a feed-urilor multiple
+Cost hardware - 4× camere + infrastructură
+Condiții de operare:
+Vreme extremă - performanță nevalidată în condiții meteo severe (ploaie, zăpadă, ceață)
+Iluminare dinamică - ziua vs. noapte, umbre în mișcare
+GPS-denied environments - LIMITARE CRITICĂ: sistemul nu funcționează în:
+Parcări multi-nivel închise
+Parcări subterane
+Zone fără acoperire GPS
+
+
+Funcționale:
+Scalabilitate:
+Marcare manuală - definirea spațiilor necesită setup manual pentru fiecare parking
+Dependență internet - sistem non-funcțional fără conexiune stabilă
+Latență streaming - 2-3 secunde pentru video (deși decouplat)
+Lipsa funcționalități:
+Rezervare anticipată - sistemul nu permite booking în avans
+Predicție disponibilitate - nu folosește ML pentru forecast
+Priorități utilizatori - fără sistem de coadă sau prioritizare (handicap, VIP)
+Indoor navigation - nu suportă navigare în parcări închise (vs. INS/LiDAR)
+Mentenanță:
+Întreținere hardware (camere, edge device)
+Costuri cloud continui (storage, compute, streaming)
+Updates software și recalibrare
+
+
+
+Articol 4
+Autori: Gousiya Begum, K. Shirisha, E. Rakesh, T. Sai Supraja, 2023
+Titlul articolului / proiectului:„Car Parking Detection System Using Deep Learning”
+Tehnologii utilizate:
+Algoritmi de învățare profundă:
+Rețele neuronale convoluționale (CNN)
+YOLOv3 (You Only Look Once) pentru detecția obiectelor
+
+Surse de date:
+Imagini și videoclipuri capturate de camere de supraveghere
+Metodologie / Abordare:
+Obiectiv: Detectarea ocupării locurilor de parcare (liber/ocupat) folosind imagini și videoclipuri de la camere de supraveghere.
+
+Algoritmi utilizați:
+CNN pentru procesarea și clasificarea imaginilor.
+YOLOv3 pentru detecția în timp real a vehiculelor.
+
+Implementare:
+Antrenarea modelelor pe seturi de date etichetate cu imagini de parcări.
+Evaluarea performanței pe imagini și videoclipuri pentru a determina eficiența metodei propuse.
+Rezultate:
+Performanță: Metoda propusă a demonstrat eficiență în detectarea locurilor de parcare disponibile și ocupate.
+Testare: Evaluarea a fost realizată atât pe imagini statice, cât și pe videoclipuri, indicând adaptabilitatea metodei la diferite tipuri de date vizuale.
+
+ Limitări:
+Dependența de condițiile de mediu: Performanța poate fi influențată de factori precum iluminarea, condițiile meteorologice sau calitatea camerei de supraveghere.
+Necesitatea unui set de date etichetate: Antrenarea modelelor CNN și YOLOv3 necesită un set de date mare și diversificat, ceea ce poate fi un obstacol în implementarea pe scară largă.
+Complexitatea implementării: Integrarea și optimizarea acestor tehnologii pentru a funcționa în timp real poate necesita resurse computaționale semnificative.
+
+
+Articol 5:
+
+Autor(i) / An:Chaimae Aajal, Othmane Sebban, Nada Faqir, Ahmed Azough, Khalid Alaoui Zidani. Anul 2025
+Titlul articolului / proiectului: Autonomous On-Street Parking Slot Detection: A Comprehensive Systematic Review of Vision-Based Approaches
+Tehnologii utilizate:
+Hardware:
+Camere fisheye - 4 camere pentru generarea imaginilor AVM (Around View Monitor)
+Camere panoramice - pentru imagini bird's-eye view
+Dashcam / cameră monoculară - pentru imagini din perspectiva șoferului (driver's POV)
+NVIDIA Titan Xp / Titan X GPU - pentru procesare deep learning
+NVIDIA GeForce RTX 3090 - pentru modele transformer
+GTX 1080 Ti GPU - pentru procesare GNN
+Embedded automotive platforms - Jetson-like devices pentru deployment real-time
+
+Metodologie / Abordare:
+Numele metodei: Systematic Literature Review (SLR) cu Taxonomie Multi-Paradigm
+Proces de cercetare (PRISMA 2020):
+Planning:
+Definirea necesității review-ului
+Formularea criteriilor de includere/excludere
+Evaluare relevanță față de obiective
+Conducting:
+Research questions (RQ):
+Tehnici de achiziție imagini (AVM, bird's-eye, POV)
+Tipuri dataset (video vs. still images)
+Modele detecție/segmentare
+Paradigme de învățare (supervised, unsupervised, RL)
+Performanță comparativă
+Limitări sistemelor vision-based
+Search Strategy:
+Baze de date: Scopus (564 articole) + PubMed (448 articole)
+Keywords: "autonomous" AND "parking" OR "parking" AND "detection"
+Total: 1,012 articole → 695 după eliminare duplicate
+Selection Criteria:
+Includere: ML/DL/RL, camere, 2016-2024, English
+Excludere: sensor-based, management systems, pre-2016
+Final: 52 research papers + 6 review papers
+Quality Assessment:
+Metodologie cross-checking
+Evaluare bias și transparență metodologică
+Data Extraction:
+Dimensiuni: datasets, features, models, metrics, metadata
+Organizare: tabele comparative, vizualizări (pie charts, histograms)
+Reporting:
+Structured synthesis cu focus pe:
+Taxonomie metode (DL, ML, CV, RL)
+Comparative performance (F1-score, Precision, Recall, FPS)
+Research gaps și future directions
+Rezultate:
+Dataset Usage:
+PS2.0: benchmark standard, 99% accuracy rates pentru majoritatea metodelor DL
+PSDD: 8 slot types, teste robustețe forme diverse
+PSV: focus segmentare (slots + lanes), outdoor + indoor + shadows
+SNU: bird's-eye view, 22,817 imagini
+Dashcam: early detection, POV real-world scenarios
+Custom: Athens streets, calibrated AVMs, manual annotations
+Performanță comparativă (metode selectate):
+Top Performers - AVM (PS2.0):
+VPS-Net: 99.63% P, 99.31% R, 48.8 FPS
+AGNN: 99.56% P, 99.42% R, 40 FPS
+DeepPS: 99.54% P, 98.89% R, 42 FPS
+DMPR-PS: 99.42% P, 99.37% R, 91 FPS  (fastest high-accuracy)
+Top Performers - Bird's-Eye View (SNU):
+Two-Stage RPN: 99.77% P, 99.77% R, 45 FPS 
+Transformer: 96.61% P, 96.11% R, 78 FPS (fastest)
+PCR+PSD: 87.75% P, 88.52% R
+Lightweight Champions:
+SPFCN (SP Module): 98.26% P, 97.56% R, 150 FPS, 2.39 MB model 
+LeNet-5 Modified: 90% Acc, 50 FPS (POV on-street)
+Segmentation Leaders:
+VH-HFCN: 96.25% Acc, 9 FPS (PSV, multi-class)
+FCN Vertical-Grid: 96.81% P, 97.80% R, 10 FPS (SS)
+Machine Learning Best:
+Hsu & Chen: 99.70% P, 95.50% R, 2.5 FPS (corner detector + Naive Bayes)
+Zhang et al. (Hybrid): 95% Acc, 60 FPS (AdaBoost + ResNet-18)
+Latency Analysis:
+DMPR-PS: ~12 ms/image (Titan Xp)
+DeepPS: ~17 ms (Titan Xp) + 23 ms cu AVM synthesis (Titan X)
+Transformer: 22.11 ms (RTX 3090, 45 FPS)
+AGNN: ~25.3 ms (GTX 1080 Ti, 40 Hz)
+SPFCN: 30 FPS @ 2.3 GHz CPU, 150 FPS @ GPU
+Limitări:
+Tehnice - Hardware:
+AVM Systems:
+Synthesis latency: 2-3 secunde delay pentru composite image generation (4-6 camere → CPU processing)
+Cost hardware: 4-6 fisheye cameras + calibration infrastructure
+Partial visibility: AVM acoperă doar slot head → geometric rules cu fixed hyperparameters pentru hidden corners
+Complexitate calibrare: intrinsic/extrinsic parameters pentru fiecare cameră
+Single Camera Systems:
+Field of view limitat: bird's-eye/POV nu acoperă parking mari (ocluzii vehicule)
+Orientation sensitivity: rectangular descriptors vulnerabile la rotation (solved parțial de circular descriptors)
+Distortion: fisheye lenses necesită geometric transformation → computational overhead
+Tehnice - Software:
+Deep Learning:
+Post-processing overhead: segmentation methods (Mask R-CNN, VH-HFCN) necesită:
+Line fitting, skeletonization, morphological ops → increased latency
+LSD algorithm inefficiencies (Shaokang Jiang et al.)
+Training complexity: transformer-based methods necesită:
+Long training times (solved parțial de Anchor DETR fixed anchors)
+Large datasets (PS2.0: 12,165 imagini; PSDD: 14,628)
+Model size: CNN-heavy architectures (ResNet-101, VGG16) → unsuitable pentru embedded low-power devices (except SPFCN: 2.39 MB)
+Two-stage redundancy: DeepPS → duplicate feature extraction vs. DMPR-PS single-stage
+Reinforcement Learning:
+Sparse rewards: difficult reward signal design pentru continuous parking maneuvers
+Sample inefficiency: necesită extensive simulation data
+Training time: long convergence periods (hundreds of episodes)
+Sim-to-real gap: transfer learning limitations (adaptive learning necesar)
+Machine Learning tradițional:
+Handcrafted features: HOG, intensity histograms → vulnerabile la:
+Illumination changes (shadows, night/day transitions)
+Degraded markings (worn paint, weather damage)
+Occlusions (debris, temporary objects)
+Geometric heuristics: fixed rules (entrance line thresholds, slot width constraints) → reduced generalization
+Low accuracy: 87-95% vs. 99%+ DL methods
+Computer Vision clasic:
+Sensitivity to noise: Canny, Hough Transform → false detections în cluttered environments
+Manual tuning: thresholds pentru binarization, edge detection → site-specific calibration
+
+
+
+
+
+
+
