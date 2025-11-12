@@ -5,37 +5,37 @@ import matplotlib.pyplot as plt
 def count_parking_spots(image_path, display=True):
     image = cv2.imread(image_path)
     if image is None:
-        print("❌ Nu s-a putut încărca imaginea.")
+        print("Nu s-a putut încărca imaginea.")
         return None
 
     original = image.copy()
     h, w = image.shape[:2]
 
-    # 1️⃣ Extindere ROI
+    # Extindere ROI
     crop_y1 = int(h * 0.20)
     crop_y2 = int(h * 0.80)
     cropped_image = image[crop_y1:crop_y2, :]
    
-    # 2️⃣ Segmentare Culoare (HSV)
+    # Segmentare Culoare (HSV)
     hsv = cv2.cvtColor(cropped_image, cv2.COLOR_BGR2HSV)
     lower_white = np.array([0, 0, 160])
     upper_white = np.array([180, 60, 255])
     color_mask = cv2.inRange(hsv, lower_white, upper_white)
    
-    # 3️⃣ Morfologie (Curățare)
+    #  Morfologie (Curățare)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     mask = cv2.morphologyEx(color_mask, cv2.MORPH_CLOSE, kernel, iterations=2)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
 
-    # 4️⃣ Muchii Canny
+    #  Muchii Canny
     edges = cv2.Canny(mask, 50, 150)
    
     # --- A. DETECTIA LINIILOR VERTICALE ---
-    # 5️⃣ Linii Hough (Praguri Relaxate)
+    #  Linii Hough (Praguri Relaxate)
     lines_v = cv2.HoughLinesP(edges, 1, np.pi / 180,
                             threshold=30, minLineLength=30, maxLineGap=10)
 
-    # 6️⃣ Filtrare și Grupare Linii Verticale
+    #  Filtrare și Grupare Linii Verticale
     vertical_lines = []
     if lines_v is not None:
         for (x1, y1, x2, y2) in lines_v[:, 0]:
@@ -79,23 +79,23 @@ def count_parking_spots(image_path, display=True):
                 if horizontal_line is None or line_length > np.sqrt((horizontal_line[2] - horizontal_line[0])**2 + (horizontal_line[3] - horizontal_line[1])**2):
                     horizontal_line = (x1, y1, x2, y2)
 
-    # 8️⃣ Calculul Final - Presupunem întotdeauna 2 rânduri dacă avem linii verticale
+    #  Calculul Final - Presupunem întotdeauna 2 rânduri dacă avem linii verticale
     # În majoritatea parcărilor cu acest tip de marcaj există 2 rânduri
     if num_spots_one_row > 0:
         if horizontal_line is not None:
             num_spots_total = num_spots_one_row * 2
             num_rows_detected = 2
-            print("   ✓ Linie orizontală detectată - confirmare 2 rânduri")
+            print("   Linie orizontală detectată - confirmare 2 rânduri")
         else:
             # Dacă nu detectăm linia dar avem linii verticale, probabil sunt tot 2 rânduri
             num_spots_total = num_spots_one_row * 2
             num_rows_detected = 2
-            print("   ⚠ Linie orizontală NU detectată - se presupun 2 rânduri")
+            print("    Linie orizontală NU detectată - se presupun 2 rânduri")
     else:
         num_spots_total = 0
         num_rows_detected = 0
        
-    # 9️⃣ Desenare rezultate
+    #  Desenare rezultate
     result = original.copy()
    
     # Linii Verzi Verticale (segmente separate)
@@ -142,11 +142,11 @@ def count_parking_spots(image_path, display=True):
                         cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
 
     print("=" * 60)
-    print(f"📊 Imagine: {image_path}")
+    print(f" Imagine: {image_path}")
     print(f"   ├─ Linii verticale detectate (Separatoare): {len(vertical_lines)}")
     print(f"   ├─ Locuri pe un rând: {num_spots_one_row}")
     print(f"   ├─ Rânduri de parcare detectate: {num_rows_detected}")
-    print(f"   └─ 🅿️ Locuri estimate TOTAL: {num_spots_total}")
+    print(f"   └─ Locuri estimate TOTAL: {num_spots_total}")
     print("=" * 60)
 
     if display:
@@ -173,7 +173,7 @@ def count_parking_spots(image_path, display=True):
        
         plt.subplot(2, 3, 5)
         plt.imshow(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
-        plt.title(f"🅿️ Locuri detectate: {num_spots_total} ({num_rows_detected} rând{'uri' if num_rows_detected > 1 else ''})")
+        plt.title(f" Locuri detectate: {num_spots_total} ({num_rows_detected} rând{'uri' if num_rows_detected > 1 else ''})")
         plt.axis("off")
 
         plt.tight_layout()
