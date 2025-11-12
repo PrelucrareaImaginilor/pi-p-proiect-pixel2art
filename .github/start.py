@@ -16,26 +16,27 @@ def count_parking_spots(image_path, display=True):
     crop_y2 = int(h * 0.80)
     cropped_image = image[crop_y1:crop_y2, :]
    
-    # Segmentare Culoare (HSV)
-    hsv = cv2.cvtColor(cropped_image, cv2.COLOR_BGR2HSV)
-    lower_white = np.array([0, 0, 160])
-    upper_white = np.array([180, 60, 255])
-    color_mask = cv2.inRange(hsv, lower_white, upper_white)
+    # Conversie la Grayscale
+    gray = cv2.cvtColor(cropped_image, cv2.COLOR_BGR2GRAY)
+    
+    # Aplicare threshold pentru a detecta marcajele albe
+    # Pixelii cu valori peste 160 sunt considerați albi (marcaje)
+    _, color_mask = cv2.threshold(gray, 160, 255, cv2.THRESH_BINARY)
    
-    #  Morfologie (Curățare)
+    # Morfologie (Curățare)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     mask = cv2.morphologyEx(color_mask, cv2.MORPH_CLOSE, kernel, iterations=2)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
 
-    #  Muchii Canny
+    # Muchii Canny
     edges = cv2.Canny(mask, 50, 150)
    
     # --- A. DETECTIA LINIILOR VERTICALE ---
-    #  Linii Hough (Praguri Relaxate)
+    # Linii Hough (Praguri Relaxate)
     lines_v = cv2.HoughLinesP(edges, 1, np.pi / 180,
                             threshold=30, minLineLength=30, maxLineGap=10)
 
-    #  Filtrare și Grupare Linii Verticale
+    # Filtrare și Grupare Linii Verticale
     vertical_lines = []
     if lines_v is not None:
         for (x1, y1, x2, y2) in lines_v[:, 0]:
@@ -79,7 +80,7 @@ def count_parking_spots(image_path, display=True):
                 if horizontal_line is None or line_length > np.sqrt((horizontal_line[2] - horizontal_line[0])**2 + (horizontal_line[3] - horizontal_line[1])**2):
                     horizontal_line = (x1, y1, x2, y2)
 
-    #  Calculul Final - Presupunem întotdeauna 2 rânduri dacă avem linii verticale
+    # Calculul Final - Presupunem întotdeauna 2 rânduri dacă avem linii verticale
     # În majoritatea parcărilor cu acest tip de marcaj există 2 rânduri
     if num_spots_one_row > 0:
         if horizontal_line is not None:
@@ -95,7 +96,7 @@ def count_parking_spots(image_path, display=True):
         num_spots_total = 0
         num_rows_detected = 0
        
-    #  Desenare rezultate
+    # Desenare rezultate
     result = original.copy()
    
     # Linii Verzi Verticale (segmente separate)
@@ -157,8 +158,8 @@ def count_parking_spots(image_path, display=True):
         plt.axis("off")
        
         plt.subplot(2, 3, 2)
-        plt.imshow(color_mask, cmap="gray")
-        plt.title("Izolare Culoare (HSV)")
+        plt.imshow(gray, cmap="gray")
+        plt.title("Grayscale")
         plt.axis("off")
        
         plt.subplot(2, 3, 3)
