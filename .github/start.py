@@ -2,220 +2,186 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
-
-# 🧩 Funcție pentru combinarea liniilor apropiate (aceeași marcaj)
-def merge_similar_lines(lines, orientation='vertical', threshold=20):
-    """
-    Combină liniile apropiate (care reprezintă același marcaj)
-    Args:
-        lines: listă de segmente [x1, y1, x2, y2]
-        orientation: 'vertical' sau 'horizontal'
-        threshold: distanța maximă (în pixeli) pentru a considera două linii identice
-    """
-    if not lines:
-        return []
-
-    merged = []
-    if orientation == 'vertical':
-        # Sortăm după poziția medie X
-        lines = sorted(lines, key=lambda l: (l[0] + l[2]) / 2)
-        group = [lines[0]]
-        for l in lines[1:]:
-            prev_x = np.mean([group[-1][0], group[-1][2]])
-            curr_x = np.mean([l[0], l[2]])
-            if abs(curr_x - prev_x) < threshold:
-                group.append(l)
-            else:
-                merged.append(np.mean(group, axis=0).astype(int).tolist())
-                group = [l]
-        merged.append(np.mean(group, axis=0).astype(int).tolist())
-
-    else:  # orizontale
-        lines = sorted(lines, key=lambda l: (l[1] + l[3]) / 2)
-        group = [lines[0]]
-        for l in lines[1:]:
-            prev_y = np.mean([group[-1][1], group[-1][3]])
-            curr_y = np.mean([l[1], l[3]])
-            if abs(curr_y - prev_y) < threshold:
-                group.append(l)
-            else:
-                merged.append(np.mean(group, axis=0).astype(int).tolist())
-                group = [l]
-        merged.append(np.mean(group, axis=0).astype(int).tolist())
-
-    return merged
-
-
-# 🅿️ Funcția principală de detecție a liniilor
-def detect_parking_lines(image_path, display=True):
-    """
-    Detectează marcajele albe din imaginea de parcare
-
-    Args:
-        image_path: Calea către imagine
-        display: Dacă True, afișează rezultatele
-
-    Returns:
-        lines_dict: Dicționar cu liniile detectate (verticale/orizontale)
-        result_image: Imagine cu liniile desenate
-    """
-
-    # Citire imagine
+def count_parking_spots(image_path, display=True):
     image = cv2.imread(image_path)
     if image is None:
-        print(f"Eroare: Nu s-a putut încărca imaginea {image_path}")
-        return None, None
+        print("❌ Nu s-a putut încărca imaginea.")
+        return None
 
     original = image.copy()
+    h, w = image.shape[:2]
 
-    # Conversie la grayscale și blur
-    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    # 1️⃣ Extindere ROI
+    crop_y1 = int(h * 0.20)
+    crop_y2 = int(h * 0.80)
+    cropped_image = image[crop_y1:crop_y2, :]
+   
+    # 2️⃣ Segmentare Culoare (HSV)
+    hsv = cv2.cvtColor(cropped_image, cv2.COLOR_BGR2HSV)
+    lower_white = np.array([0, 0, 160])
+    upper_white = np.array([180, 60, 255])
+    color_mask = cv2.inRange(hsv, lower_white, upper_white)
+   
+    # 3️⃣ Morfologie (Curățare)
+    kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
+    mask = cv2.morphologyEx(color_mask, cv2.MORPH_CLOSE, kernel, iterations=2)
+    mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, kernel, iterations=1)
 
-    # filtrul gaussian ne ajuta sa eliminam detaliile inutile
-    blurred = cv2.GaussianBlur(gray, (5, 5), 0)
+    # 4️⃣ Muchii Canny
+    edges = cv2.Canny(mask, 50, 150)
+   
+    # --- A. DETECTIA LINIILOR VERTICALE ---
+    # 5️⃣ Linii Hough (Praguri Relaxate)
+    lines_v = cv2.HoughLinesP(edges, 1, np.pi / 180,
+                            threshold=30, minLineLength=30, maxLineGap=10)
 
-    # Detectarea marginilor folosind operatorul Canny
-    edges = cv2.Canny(blurred, 50, 200, apertureSize=3) # apertureSize indică dimensiunea kernel-ului pentru operatorul Sobel
-
-    # Detectare linii cu Hough Transform (parametri ajustați)
-    lines = cv2.HoughLinesP(
-        edges,
-        rho=1,
-        theta=np.pi / 180,
-        threshold=80,       # prag mai mare -> mai puține segmente
-        minLineLength=80,   # lungime minimă mai mare
-        maxLineGap=20       # unește segmente apropiate
-    )
-
-    result = original.copy()
+    # 6️⃣ Filtrare și Grupare Linii Verticale
     vertical_lines = []
-    horizontal_lines = []
+    if lines_v is not None:
+        for (x1, y1, x2, y2) in lines_v[:, 0]:
+            angle_rad = np.arctan2(y2 - y1, x2 - x1)
+            angle = abs(np.degrees(angle_rad))
+           
+            if 75 < angle < 105:
+                vertical_lines.append((x1, y1, x2, y2))
+               
+    def merge_lines(lines, threshold=60):
+        if not lines: return []
+        lines = sorted(lines, key=lambda l: (l[0] + l[2]) / 2)
+        merged = [lines[0]]
+        for l in lines[1:]:
+            prev_x = np.mean([merged[-1][0], merged[-1][2]])
+            curr_x = np.mean([l[0], l[2]])
+            if abs(curr_x - prev_x) > threshold:
+                merged.append(l)
+        return merged
 
-    if lines is not None:
-        for line in lines:
-            x1, y1, x2, y2 = line[0]
-            angle = np.abs(np.degrees(np.arctan2(y2 - y1, x2 - x1)))
+    vertical_lines = merge_lines(vertical_lines, threshold=60)
+    vertical_lines = sorted(vertical_lines, key=lambda l: (l[0] + l[2]) / 2)
+   
+    # Numărul de locuri pe UN SINGUR RÂND
+    num_spots_one_row = max(len(vertical_lines) - 1, 0)
+   
+    # --- B. DETECTIA LINIEI ORIZONTALE CENTRALE ---
+    # Praguri mai relaxate pentru a detecta linia orizontală
+    lines_h = cv2.HoughLinesP(edges, 1, np.pi / 180,
+                            threshold=40, minLineLength=int(w * 0.5), maxLineGap=15)
+   
+    horizontal_line = None
+    if lines_h is not None:
+        for (x1, y1, x2, y2) in lines_h[:, 0]:
+            angle_rad = np.arctan2(y2 - y1, x2 - x1)
+            angle = abs(np.degrees(angle_rad))
+            line_length = np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+           
+            # Filtrare pentru linii aproape orizontale și suficient de lungi
+            if angle < 15 or angle > 165:
+                if horizontal_line is None or line_length > np.sqrt((horizontal_line[2] - horizontal_line[0])**2 + (horizontal_line[3] - horizontal_line[1])**2):
+                    horizontal_line = (x1, y1, x2, y2)
 
-            # Clasificare linie
-            if 80 <= angle <= 100:
-                vertical_lines.append(line[0])
-            elif angle <= 15 or angle >= 165:
-                horizontal_lines.append(line[0])
+    # 8️⃣ Calculul Final - Presupunem întotdeauna 2 rânduri dacă avem linii verticale
+    # În majoritatea parcărilor cu acest tip de marcaj există 2 rânduri
+    if num_spots_one_row > 0:
+        if horizontal_line is not None:
+            num_spots_total = num_spots_one_row * 2
+            num_rows_detected = 2
+            print("   ✓ Linie orizontală detectată - confirmare 2 rânduri")
+        else:
+            # Dacă nu detectăm linia dar avem linii verticale, probabil sunt tot 2 rânduri
+            num_spots_total = num_spots_one_row * 2
+            num_rows_detected = 2
+            print("   ⚠ Linie orizontală NU detectată - se presupun 2 rânduri")
+    else:
+        num_spots_total = 0
+        num_rows_detected = 0
+       
+    # 9️⃣ Desenare rezultate
+    result = original.copy()
+   
+    # Linii Verzi Verticale (segmente separate)
+    center_y_in_cropped = cropped_image.shape[0] // 2
+    line_segment_length = int(cropped_image.shape[0] * 0.7)
+    y_offset = line_segment_length // 2
+   
+    # Segmentul superior
+    start_y_upper = crop_y1 + center_y_in_cropped - y_offset
+    end_y_upper = crop_y1 + center_y_in_cropped
+    # Segmentul inferior
+    start_y_lower = crop_y1 + center_y_in_cropped
+    end_y_lower = crop_y1 + center_y_in_cropped + y_offset
 
-    # 🔹 Curățare linii duplicate / apropiate
-    vertical_lines = merge_similar_lines(vertical_lines, 'vertical', threshold=25)
-    horizontal_lines = merge_similar_lines(horizontal_lines, 'horizontal', threshold=25)
+    for (x1, y1, x2, y2) in vertical_lines:
+        line_x_pos = int(np.mean([x1, x2]))
+       
+        # Desenăm segmentul superior (VERDE)
+        cv2.line(result, (line_x_pos, start_y_upper), (line_x_pos, end_y_upper), (0, 255, 0), 3)
+        # Desenăm segmentul inferior (VERDE)
+        cv2.line(result, (line_x_pos, start_y_lower), (line_x_pos, end_y_lower), (0, 255, 0), 3)
 
-    # 🔹 Desenare pe imagine
-    for x1, y1, x2, y2 in vertical_lines:
-        cv2.line(result, (x1, y1), (x2, y2), (0, 255, 0), 2)  # verde - verticale
-    for x1, y1, x2, y2 in horizontal_lines:
-        cv2.line(result, (x1, y1), (x2, y2), (255, 0, 0), 2)  # roșu - orizontale
+    # Linia Orizontală Centrală (ALBASTRU în BGR)
+    if horizontal_line is not None:
+        (hx1, hy1, hx2, hy2) = horizontal_line
+        cv2.line(result, (hx1, hy1 + crop_y1), (hx2, hy2 + crop_y1), (255, 0, 0), 3)
 
-    # Afișare rezultate
+    # Marcăm locurile numerotate pentru ambele rânduri
+    if num_spots_one_row > 0:
+        y_ref_upper = crop_y1 + center_y_in_cropped - int(cropped_image.shape[0] * 0.25)
+        y_ref_lower = crop_y1 + center_y_in_cropped + int(cropped_image.shape[0] * 0.25)
+       
+        for i in range(len(vertical_lines) - 1):
+            x_curr = int(np.mean([vertical_lines[i][0], vertical_lines[i][2]]))
+            x_next = int(np.mean([vertical_lines[i + 1][0], vertical_lines[i + 1][2]]))
+            center_x = int((x_curr + x_next) / 2)
+           
+            # Numerotare Rând Superior (roșu)
+            cv2.putText(result, f"{i+1}", (center_x - 10, y_ref_upper),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 0, 255), 2)
+           
+            # Numerotare Rând Inferior (albastru)
+            cv2.putText(result, f"{num_spots_one_row + i+1}", (center_x - 10, y_ref_lower),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 0, 0), 2)
+
+    print("=" * 60)
+    print(f"📊 Imagine: {image_path}")
+    print(f"   ├─ Linii verticale detectate (Separatoare): {len(vertical_lines)}")
+    print(f"   ├─ Locuri pe un rând: {num_spots_one_row}")
+    print(f"   ├─ Rânduri de parcare detectate: {num_rows_detected}")
+    print(f"   └─ 🅿️ Locuri estimate TOTAL: {num_spots_total}")
+    print("=" * 60)
+
     if display:
-        plt.figure(figsize=(15, 10))
+        plt.figure(figsize=(18, 10))
         plt.subplot(2, 3, 1)
         plt.imshow(cv2.cvtColor(original, cv2.COLOR_BGR2RGB))
-        plt.title('Imaginea Originală')
-        plt.axis('off')
-
+        plt.title("Imagine originală")
+        plt.axis("off")
+       
         plt.subplot(2, 3, 2)
-        plt.imshow(gray, cmap='gray')
-        plt.title('Grayscale')
-        plt.axis('off')
-
+        plt.imshow(color_mask, cmap="gray")
+        plt.title("Izolare Culoare (HSV)")
+        plt.axis("off")
+       
         plt.subplot(2, 3, 3)
-        plt.imshow(edges, cmap='gray')
-        plt.title('Detectare Margini (Canny)')
-        plt.axis('off')
+        plt.imshow(mask, cmap="gray")
+        plt.title("Binarizare & Curățare")
+        plt.axis("off")
 
         plt.subplot(2, 3, 4)
-        plt.imshow(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
-        plt.title(f'Linii Detectate\nVerticale: {len(vertical_lines)} | Orizontale: {len(horizontal_lines)}')
-        plt.axis('off')
-
+        plt.imshow(edges, cmap="gray")
+        plt.title("Muchii (Canny)")
+        plt.axis("off")
+       
         plt.subplot(2, 3, 5)
-        vert_img = original.copy()
-        for x1, y1, x2, y2 in vertical_lines:
-            cv2.line(vert_img, (x1, y1), (x2, y2), (0, 255, 0), 2)
-        plt.imshow(cv2.cvtColor(vert_img, cv2.COLOR_BGR2RGB))
-        plt.title(f'Linii Verticale ({len(vertical_lines)})')
-        plt.axis('off')
-
-        plt.subplot(2, 3, 6)
-        horiz_img = original.copy()
-        for x1, y1, x2, y2 in horizontal_lines:
-            cv2.line(horiz_img, (x1, y1), (x2, y2), (255, 0, 0), 2)
-        plt.imshow(cv2.cvtColor(horiz_img, cv2.COLOR_BGR2RGB))
-        plt.title(f'Linii Orizontale ({len(horizontal_lines)})')
-        plt.axis('off')
+        plt.imshow(cv2.cvtColor(result, cv2.COLOR_BGR2RGB))
+        plt.title(f"🅿️ Locuri detectate: {num_spots_total} ({num_rows_detected} rând{'uri' if num_rows_detected > 1 else ''})")
+        plt.axis("off")
 
         plt.tight_layout()
         plt.show()
 
-    # Statistici
-    print(f"\n📊 Statistici pentru {image_path}:")
-    print(f"   ├─ Linii verticale detectate: {len(vertical_lines)}")
-    print(f"   ├─ Linii orizontale detectate: {len(horizontal_lines)}")
-    print(f"   └─ Total linii: {len(vertical_lines) + len(horizontal_lines)}")
-
-    return {
-        'vertical': vertical_lines,
-        'horizontal': horizontal_lines,
-        'all': lines
-    }, result
+    return num_spots_total, result
 
 
-
-def detect_parking_spots(image_path):
-    """
-    Detectează locurile de parcare bazat pe intersecțiile liniilor
-    """
-    lines_dict, result = detect_parking_lines(image_path, display=False)
-
-    if lines_dict is None:
-        return None
-
-    vertical_lines = lines_dict['vertical']
-    horizontal_lines = lines_dict['horizontal']
-
-    # Sortare linii verticale după coordonata x
-    vertical_lines_sorted = sorted(vertical_lines, key=lambda l: (l[0] + l[2]) / 2)
-
-    # Calculare număr locuri de parcare
-    num_parking_spots = len(vertical_lines_sorted) - 1 if len(vertical_lines_sorted) > 1 else 0
-
-    print(f"\n🅿  Locuri de parcare detectate: {num_parking_spots}")
-
-    return num_parking_spots
-
-
-# Utilizare
 if __name__ == "__main__":
-    # Detectare pentru prima imagine (fără mașini)
-    print("=" * 60)
-    print("IMAGINE 1 - Parcare goală")
-    print("=" * 60)
-    lines1, result1 = detect_parking_lines('parcare_libera1.jpg')
-    spots1 = detect_parking_spots('parcare_libera1.jpg')
-    """""
-    print("\n" + "=" * 60)
-    print("IMAGINE 2 - Parcare cu mașini")
-    print("=" * 60)
-    lines2, result2 = detect_parking_lines('parking_occupied.jpg')
-    spots2 = detect_parking_spots('parking_occupied.jpg')
-    """
-    # Salvare rezultate
-    if result1 is not None:
-        cv2.imwrite('parking_empty_detected.jpg', result1)
-        print("\n✅ Rezultat salvat: parking_empty_detected.jpg")
-    """""
-    if result2 is not None:
-        cv2.imwrite('parking_occupied_detected.jpg', result2)
-        print("✅ Rezultat salvat: parking_occupied_detected.jpg")"""
-
-
-
-
-
+    image_path = "parcare1.jpg"
+    count_parking_spots(image_path)
