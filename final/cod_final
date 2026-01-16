@@ -110,7 +110,7 @@ if len(y_true_all) > 0:
     print(f"{'REAL Ocupat':<15} {cm[1][0]:<15} {cm[1][1]:<15}") 
 
 
-test_img_json = "testare/demo_annotations.json" 
+test_img_json = "C:/Users/Bianca/Downloads/pi-p-proiect-pixel2art/final/testare/demo_annotations.json" 
 if os.path.exists(test_img_json):
     with open(test_img_json) as f:
         data_view = json.load(f)

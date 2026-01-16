@@ -31,7 +31,7 @@ def mouse_callback(event, x, y, flags, param):
     cv2.imshow("Adnotare", imagine_display)
 
 
-img_path = "testare\demo.png"  
+img_path = "C:/Users/Bianca/Downloads/pi-p-proiect-pixel2art/final/testare/demo.png"  
 
 img = cv2.imread(img_path)
 if img is None:
