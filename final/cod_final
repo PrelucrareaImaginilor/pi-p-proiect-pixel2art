@@ -30,7 +30,6 @@ def extract_features(img, polygon):
 
     return np.hstack([mean, std, edge_density, hist]) 
 
-
 X, y, img_ids = [], [], []
 
 for ann_file in glob.glob("*_annotations.json"):
@@ -54,7 +53,6 @@ X = np.array(X)
 y = np.array(y)
 img_ids = np.array(img_ids)
 print(f"Dataset training: {X.shape}") 
-
 
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X) 
@@ -82,8 +80,7 @@ if files:
                 y_true_all.append(spot["label"])
                 feat = extract_features(img_m, spot["polygon"])
                 feat_s = scaler.transform([feat])
-                
-                # Logica cu prag edge density 
+                 
                 if feat[2] < EDGE_PRAG_LIBER:
                     pred = 0
                 else:
@@ -96,12 +93,10 @@ if len(y_true_all) > 0:
     report = classification_report(y_true_all, y_pred_all, target_names=['Liber', 'Ocupat'], output_dict=True)
     cm = confusion_matrix(y_true_all, y_pred_all) 
 
-    print("      RAPORT PERFORMANȚĂ DETECȚIE PARCARE")
+    print("  RAPORT PERFORMANȚĂ DETECȚIE PARCARE")
     print("\n")
-    # Afișare Acuratețe
     print(f"ACURATEȚE TOTALĂ: {acc*100:.2f}%")
     print("\n")
-    # Afișare Metrici pe Coloane
     print(f"{'CLASA':<12} {'PRECIZIE':<12} {'RECALL':<12}")
     for clasa in ['Liber', 'Ocupat']:
         p = report[clasa]['precision'] 
@@ -109,14 +104,13 @@ if len(y_true_all) > 0:
         print(f"{clasa:<12} {p:<12.2f} {r:<12.2f} ")
     print("\n")
     
-    # Matrice de Confuzie structurată pe coloane
     print("MATRICE DE CONFUZIE:")
     print(f"{'':<15} {'PREZIS Liber':<15} {'PREZIS Ocupat':<15}")
     print(f"{'REAL Liber':<15} {cm[0][0]:<15} {cm[0][1]:<15}")
     print(f"{'REAL Ocupat':<15} {cm[1][0]:<15} {cm[1][1]:<15}") 
 
 
-test_img_json = "testare/poza16_annotations.json" 
+test_img_json = "testare/demo_annotations.json" 
 if os.path.exists(test_img_json):
     with open(test_img_json) as f:
         data_view = json.load(f)
@@ -142,7 +136,7 @@ if os.path.exists(test_img_json):
         print(f"\nREZULTATE VIZUALE ({data_view['image']}):")
         print(f"LIBERE: {libere} | OCUPATE: {ocupate}")
         
-        cv2.imshow("Rezultat Final si Metricile in Consola", img_view)
+        cv2.imshow("Vizualizare", img_view)
         cv2.waitKey(0)
         cv2.destroyAllWindows()
 else:
