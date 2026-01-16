@@ -1,0 +1,149 @@
+import cv2
+import json
+import numpy as np
+import glob
+import os
+from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+
+def extract_features(img, polygon):
+    mask = np.zeros(img.shape[:2], dtype=np.uint8)
+    poly = np.array(polygon)
+    cv2.fillPoly(mask, [poly], 255)
+
+    roi = cv2.bitwise_and(img, img, mask=mask)
+    gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+
+    pixels = gray[mask == 255]
+    if len(pixels) == 0:
+        return np.zeros(19)  
+
+    mean = np.mean(pixels) 
+    std = np.std(pixels)
+    edges = cv2.Canny(gray, 50, 150)
+    edge_density = np.sum(edges[mask == 255] > 0) / len(pixels) 
+
+    hist = cv2.calcHist([gray], [0], mask, [16], [0,256])
+    hist = cv2.normalize(hist, hist).flatten()
+
+    return np.hstack([mean, std, edge_density, hist]) 
+
+
+X, y, img_ids = [], [], []
+
+for ann_file in glob.glob("*_annotations.json"):
+    with open(ann_file) as f:
+        data = json.load(f)
+
+    if "spots" in data and len(data["spots"]) > 0 and "label" in data["spots"][0]: 
+        img = cv2.imread(data["image"])
+        if img is None: continue
+        for spot in data["spots"]:
+            feat = extract_features(img, spot["polygon"])
+            X.append(feat)
+            y.append(spot["label"]) 
+            img_ids.append(data["image"])
+
+if len(X) == 0:
+    print("Nu există date cu label pentru training!")
+    exit()
+
+X = np.array(X)
+y = np.array(y)
+img_ids = np.array(img_ids)
+print(f"Dataset training: {X.shape}") 
+
+
+scaler = StandardScaler()
+X_scaled = scaler.fit_transform(X) 
+
+model = SVC(kernel='rbf')
+model.fit(X_scaled, y)
+print("Modelul final a fost antrenat.")
+
+
+folder_test = "pentru_metrici"  
+y_true_all, y_pred_all = [], [] 
+EDGE_PRAG_LIBER = 0.06 
+
+files = glob.glob(os.path.join(folder_test, "*.json"))
+
+if files:
+    for test_ann_path in files:
+        with open(test_ann_path) as f:
+            data_m = json.load(f)
+        img_m = cv2.imread(data_m["image"])
+        if img_m is None: continue
+
+        for spot in data_m["spots"]:
+            if "label" in spot:
+                y_true_all.append(spot["label"])
+                feat = extract_features(img_m, spot["polygon"])
+                feat_s = scaler.transform([feat])
+                
+                # Logica cu prag edge density 
+                if feat[2] < EDGE_PRAG_LIBER:
+                    pred = 0
+                else:
+                    pred = model.predict(feat_s)[0]
+                y_pred_all.append(pred)
+
+
+if len(y_true_all) > 0:
+    acc = accuracy_score(y_true_all, y_pred_all) 
+    report = classification_report(y_true_all, y_pred_all, target_names=['Liber', 'Ocupat'], output_dict=True)
+    cm = confusion_matrix(y_true_all, y_pred_all) 
+
+    print("      RAPORT PERFORMANȚĂ DETECȚIE PARCARE")
+    print("\n")
+    # Afișare Acuratețe
+    print(f"ACURATEȚE TOTALĂ: {acc*100:.2f}%")
+    print("\n")
+    # Afișare Metrici pe Coloane
+    print(f"{'CLASA':<12} {'PRECIZIE':<12} {'RECALL':<12}")
+    for clasa in ['Liber', 'Ocupat']:
+        p = report[clasa]['precision'] 
+        r = report[clasa]['recall'] 
+        print(f"{clasa:<12} {p:<12.2f} {r:<12.2f} ")
+    print("\n")
+    
+    # Matrice de Confuzie structurată pe coloane
+    print("MATRICE DE CONFUZIE:")
+    print(f"{'':<15} {'PREZIS Liber':<15} {'PREZIS Ocupat':<15}")
+    print(f"{'REAL Liber':<15} {cm[0][0]:<15} {cm[0][1]:<15}")
+    print(f"{'REAL Ocupat':<15} {cm[1][0]:<15} {cm[1][1]:<15}") 
+
+
+test_img_json = "testare/poza16_annotations.json" 
+if os.path.exists(test_img_json):
+    with open(test_img_json) as f:
+        data_view = json.load(f)
+    
+    img_view = cv2.imread(data_view["image"])
+    if img_view is not None:
+        libere = ocupate = 0
+        for spot in data_view["spots"]:
+            feat = extract_features(img_view, spot["polygon"])
+            feat_scaled = scaler.transform([feat])
+            
+            if feat[2] < EDGE_PRAG_LIBER:
+                pred = 0
+            else:
+                pred = model.predict(feat_scaled)[0]
+
+            color = (0, 255, 0) if pred == 0 else (0, 0, 255)
+            if pred == 0: libere += 1
+            else: ocupate += 1
+            
+            cv2.polylines(img_view, [np.array(spot["polygon"])], True, color, 2)
+
+        print(f"\nREZULTATE VIZUALE ({data_view['image']}):")
+        print(f"LIBERE: {libere} | OCUPATE: {ocupate}")
+        
+        cv2.imshow("Rezultat Final si Metricile in Consola", img_view)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+else:
+    print(f"\nNu s-a găsit fișierul de test vizual: {test_img_json}")
