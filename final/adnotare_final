@@ -1,0 +1,91 @@
+import cv2
+import json
+import numpy as np
+
+locuri = []
+puncte_curente = []
+labels = []
+
+def mouse_callback(event, x, y, flags, param):
+    global puncte_curente, imagine_display, locuri, labels
+
+    if event == cv2.EVENT_LBUTTONDOWN:
+        puncte_curente.append([x, y])
+        cv2.circle(imagine_display, (x, y), 4, (0, 0, 255), -1)
+
+        if len(puncte_curente) > 1:
+            cv2.line(imagine_display,
+                     tuple(puncte_curente[-2]),
+                     (x, y),
+                     (255, 0, 0), 2)
+
+        if len(puncte_curente) == 4:
+            locuri.append(puncte_curente.copy())
+            cv2.polylines(imagine_display,
+                          [np.array(puncte_curente)],
+                          True, (0, 255, 0), 2)
+
+            print(f"Loc {len(locuri)-1} desenat.")
+            puncte_curente = []
+
+    cv2.imshow("Adnotare", imagine_display)
+
+
+img_path = "C:/Users/Bianca/Downloads/pi-p-proiect-pixel2art/final/testare/demo.png"  
+
+img = cv2.imread(img_path)
+if img is None:
+    print("Eroare imagine!")
+    exit()
+
+imagine_display = img.copy()
+
+cv2.namedWindow("Adnotare")
+cv2.setMouseCallback("Adnotare", mouse_callback)
+
+print("INSTRUCȚIUNI:")
+print("Click 4 puncte pentru fiecare loc.")
+print("După ce termini toate locurile:")
+print("Apasă 'l' = LIBER | 'o' = OCUPAT")
+print("'s' = SALVARE | 'q' = IESIRE")
+
+while True:
+    cv2.imshow("Adnotare", imagine_display)
+    key = cv2.waitKey(1) & 0xFF
+
+    if key == ord('l'):
+        labels.append(0)
+        print(f"Loc {len(labels)-1} -> LIBER")
+
+    elif key == ord('o'):
+        labels.append(1)
+        print(f"Loc {len(labels)-1} -> OCUPAT")
+
+    elif key == ord('s'):
+        if len(labels) == 0:
+            out = {
+                "image": img_path,
+                "spots": [
+                    {"polygon": loc} for loc in locuri
+                ]
+            }
+        else:
+            out = {
+                "image": img_path,
+                "spots": [
+                    {"polygon": locuri[i], "label": labels[i]}
+                    for i in range(len(locuri))
+                ]
+            }
+        with open(img_path.replace(".png", "_annotations.json"), "w") as f:
+            json.dump(out, f, indent=2)
+
+        print("Salvat cu succes.")
+        break
+
+
+    elif key == ord('q'):
+        print("Ieșire fără salvare.")
+        break
+
+cv2.destroyAllWindows()
